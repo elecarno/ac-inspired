@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://bhxapialta7no"]
+
+[ext_resource type="Texture2D" uid="uid://0c5kicpxg7wv" path="res://tex/proto/dark/texture_01.png" id="1_f3sb7"]
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_gv5m4"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_f3sb7"]
+size = Vector2(100, 100)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fj7yv"]
+albedo_texture = ExtResource("1_f3sb7")
+uv1_scale = Vector3(100, 100, 100)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_f3sb7"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_fj7yv"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_f3sb7"]
+size = Vector3(0.3, 0.3, 0.5)
+
+[node name="world" type="Node3D" unique_id=546850593]
+
+[node name="floor" type="StaticBody3D" parent="." unique_id=1384270052]
+
+[node name="col" type="CollisionShape3D" parent="floor" unique_id=1439982263]
+shape = SubResource("WorldBoundaryShape3D_gv5m4")
+debug_fill = false
+
+[node name="mesh" type="MeshInstance3D" parent="floor" unique_id=1658666353]
+mesh = SubResource("PlaneMesh_f3sb7")
+surface_material_override/0 = SubResource("StandardMaterial3D_fj7yv")
+
+[node name="player" type="CharacterBody3D" parent="." unique_id=1324173662]
+
+[node name="col" type="CollisionShape3D" parent="player" unique_id=1932294852]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_f3sb7")
+
+[node name="mesh" type="MeshInstance3D" parent="player" unique_id=458985766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CylinderMesh_fj7yv")
+
+[node name="pointer" type="MeshInstance3D" parent="player" unique_id=1014126210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0.5)
+mesh = SubResource("BoxMesh_f3sb7")
+
+[node name="camera" type="Camera3D" parent="player" unique_id=970756229]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, -1.8408737, 2.0175056, -3.25433)
+fov = 80.0
