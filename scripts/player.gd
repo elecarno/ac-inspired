@@ -2,32 +2,65 @@ extends CharacterBody3D
 
 # EXPORTS ----------------------------------------------------------------------
 @export_group("Camera")
+## Sensititivy of the camera based on mouse movement
 @export_range(0.0, 1.0) var mouse_sensitivity: float = 0.25
-@export var max_tilt: float = 5.0
-@export var tilt_speed: float = 3.0
+## Maximum tilt angle in degrees of the camera when moving side to side in boost mode
+@export var cam_max_tilt: 		 float = 5.0
+## Speed at which the camera tilts from side to side in boost mode
+@export var cam_tilt_speed: 	 float = 3.0
+## Minimum distance of the camera when in walk mode
+@export var cam_walk_distance: 	 float = 2.5
+## Minimum distance of the camera when in boost mode
+@export var cam_boost_distance:  float = 3.5
+## Maximum distance of the camera
+@export var cam_max_distance: 	 float = 5.0
+## Speed at which the camera moves towards it's current minimum distance
+@export var cam_arm_speed: 		 float = 1.5
+## The follow speed of the camera during boost mode or flight
+@export var cam_boost_speed: 	 float = 30.0
+## Vertical offset of the camera from the player origin
+@export var cam_vertical_offset: float = 2.5
 
 @export_group("Movement")
-@export var walk_speed: float = 8.0
-@export var slide_speed: float = 25.0
-@export var acceleration: float = 50.0
-@export var rotation_speed: float = 12.0
-@export var jump_impulse: float = 25.0
-@export var flight_impulse: float = 25.0
-@export var gravity: float = -30.0
+## Speed of the player in walking mode
+@export var walk_speed: 		float = 8.0
+## Speed of the player in boosting mode
+@export var boost_speed: 		float = 25.0
+## Acceleration of the player movement
+@export var acceleration: 		float = 50.0
+## Speed of the player's quick boost
+@export var quick_boost_speed: 	float = 30.0
+## Rotation speed of the player character's mesh
+@export var rotation_speed: 	float = 12.0
+## Vertical impulse used in jumping
+@export var jump_impulse: 		float = 25.0
+## Vertical impulse used in flight
+@export var flight_impulse: 	float = 25.0
+## Vertical downward decelleration applied to the player as gravity
+@export var gravity:			float = -30.0
 
 # VARIABLES --------------------------------------------------------------------
-var cam_input_direction: Vector2 = Vector2.ZERO
+var cam_input_direction: 	 Vector2 = Vector2.ZERO
 var last_movement_direction: Vector3 = Vector3.BACK
-var is_sliding_mode: bool = false
+var is_boost_mode: bool = false
 
 # REFERENCES -------------------------------------------------------------------
-@onready var cam_pivot: Node3D = $cam_pivot
-@onready var cam: Camera3D = $cam_pivot/cam_arm/cam
-@onready var mesh: MeshInstance3D = $mesh
-@onready var flight_delay: Timer = $flight_delay
+@onready var cam_pivot: 	Node3D = $cam_pivot
+@onready var cam_arm: 		SpringArm3D = $cam_pivot/cam_arm
+@onready var cam: 			Camera3D = $cam_pivot/cam_arm/cam
+@onready var mesh: 			MeshInstance3D = $mesh
+@onready var flight_delay: 	Timer = $flight_delay
+@onready var qb_delay: 		Timer = $qb_delay
+
 
 
 # CODE -------------------------------------------------------------------------
+func _ready() -> void:
+	cam_arm.spring_length = cam_walk_distance
+	
+	# stop cam pivot from being locked to player position
+	cam_pivot.set_as_top_level(true)
+
 func _input(event: InputEvent) -> void:
 	# mouse capturing
 	if event.is_action_pressed("lmb"):
@@ -37,10 +70,10 @@ func _input(event: InputEvent) -> void:
 		
 	# movement mode switching
 	if event.is_action_pressed("move_mode"):
-		if is_sliding_mode and velocity.length() < 0.1:
-			is_sliding_mode = false
+		if is_boost_mode and velocity.length() < 0.1:
+			is_boost_mode = false
 		else:
-			is_sliding_mode = true
+			is_boost_mode = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -54,6 +87,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 
 func _physics_process(delta: float) -> void:
+	# camera follow ------------------------------------------------------------
+	var cam_target_pos = global_position + Vector3(0, cam_vertical_offset, 0)
+	if is_boost_mode or not is_on_floor():
+		cam_pivot.global_position = cam_pivot.global_position.lerp(
+			cam_target_pos, cam_boost_speed * delta
+		)
+	else:
+		cam_pivot.global_position = cam_target_pos
+	
 	# camera rotation ----------------------------------------------------------
 	cam_pivot.rotation.x -= cam_input_direction.y * delta
 	cam_pivot.rotation.x = clamp(cam_pivot.rotation.x, -PI/6.0, PI/3.0)
@@ -61,20 +103,28 @@ func _physics_process(delta: float) -> void:
 	
 	cam_input_direction = Vector2.ZERO
 	
-	# camera tilting in slide mode
-	if is_sliding_mode:
+	if is_boost_mode:
+		cam_arm.spring_length = lerp(
+			cam_arm.spring_length, cam_boost_distance, cam_arm_speed * delta
+		)
+		
+		# camera tilting in boost mode
 		if Input.is_action_pressed("move_left"):
 			cam.rotation.z = lerp_angle(
-				cam.rotation.z, deg_to_rad(max_tilt), tilt_speed * delta
+				cam.rotation.z, deg_to_rad(cam_max_tilt), cam_tilt_speed * delta
 			)
 		elif Input.is_action_pressed("move_right"):
 			cam.rotation.z = lerp_angle(
-				cam.rotation.z, -deg_to_rad(max_tilt), tilt_speed * delta
+				cam.rotation.z, -deg_to_rad(cam_max_tilt), cam_tilt_speed * delta
 			)
 		else:
 			cam.rotation.z = lerp_angle(
-				cam.rotation.z, 0, tilt_speed * delta
+				cam.rotation.z, 0, cam_tilt_speed * delta
 			)
+	else:
+		cam_arm.spring_length = lerp(
+			cam_arm.spring_length, cam_walk_distance, cam_arm_speed * delta
+		)
 	
 	# movement -----------------------------------------------------------------
 	# capture raw input and create movement direction vector
@@ -96,7 +146,7 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0
 	
 	var move_speed: float = 0.0
-	if is_sliding_mode: move_speed = slide_speed
+	if is_boost_mode: move_speed = boost_speed
 	else: move_speed = walk_speed
 	
 	velocity = velocity.move_toward(
@@ -104,7 +154,13 @@ func _physics_process(delta: float) -> void:
 		acceleration * delta
 	)
 	velocity.y = y_velocity + (gravity * delta)
-
+	
+	# quick boosting
+	if Input.is_action_just_pressed("move_boost") and qb_delay.is_stopped():
+		velocity += (move_direction * quick_boost_speed)
+		qb_delay.start()
+	
+	# jumping and flight
 	var is_starting_jump: bool = (
 		Input.is_action_just_pressed("move_jump") and 
 		is_on_floor()
@@ -116,7 +172,7 @@ func _physics_process(delta: float) -> void:
 	var is_flying: bool = (
 		Input.is_action_pressed("move_jump") and 
 		not is_on_floor() and
-		$flight_delay.is_stopped()
+		flight_delay.is_stopped()
 	)
 	if is_flying:
 		velocity.y = 0.0
@@ -124,9 +180,9 @@ func _physics_process(delta: float) -> void:
 	
 	move_and_slide()
 	
-	# if player stops moving, turn off sliding mode
-	#if is_sliding_mode and velocity.length() < 0.1:
-		#is_sliding_mode = false
+	# if player stops moving, turn off boost mode
+	#if is_boost_mode and velocity.length() < 0.1:
+		#is_boost_mode = false
 	
 	# rotate mesh to movement direction
 	if move_direction.length() > 0.2:

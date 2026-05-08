@@ -2243,9 +2243,12 @@ spring_length = 3.0
 margin = 0.5
 
 [node name="cam" type="Camera3D" parent="player/cam_pivot/cam_arm" unique_id=970756229]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.5)
 fov = 80.0
 
 [node name="flight_delay" type="Timer" parent="player" unique_id=1870925902]
+wait_time = 0.5
+one_shot = true
+
+[node name="qb_delay" type="Timer" parent="player" unique_id=1632128203]
 wait_time = 0.5
 one_shot = true
