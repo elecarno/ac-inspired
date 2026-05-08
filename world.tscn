@@ -45,7 +45,8 @@ size = Vector3(0.3, 0.3, 0.5)
 environment = SubResource("Environment_aqk2v")
 
 [node name="sun" type="DirectionalLight3D" parent="." unique_id=301139886]
-transform = Transform3D(0.89709646, 0.20528772, 0.39124778, -0.44183475, 0.4168141, 0.79438543, 0, -0.8855073, 0.46462572, 0, 4.3652735, 0)
+transform = Transform3D(-0.8507775, 0.08616996, -0.5184131, -0.44183472, 0.41681397, 0.7943853, 0.28453392, 0.9048982, -0.3165431, 0, 4.3652735, 0)
+shadow_enabled = true
 
 [node name="map" type="Node3D" parent="." unique_id=1492069987]
 
@@ -2235,12 +2236,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.5)
 mesh = SubResource("BoxMesh_f3sb7")
 
 [node name="cam_pivot" type="Node3D" parent="player" unique_id=1657541630]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
 
 [node name="cam_arm" type="SpringArm3D" parent="player/cam_pivot" unique_id=747717184]
-spring_length = 2.5
+spring_length = 3.0
 margin = 0.5
 
 [node name="cam" type="Camera3D" parent="player/cam_pivot/cam_arm" unique_id=970756229]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.5)
 fov = 80.0
