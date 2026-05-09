@@ -1,8 +1,9 @@
 [gd_scene format=3 uid="uid://bhxapialta7no"]
 
 [ext_resource type="Texture2D" uid="uid://0c5kicpxg7wv" path="res://tex/proto/dark/texture_01.png" id="1_f3sb7"]
-[ext_resource type="Script" uid="uid://kgrshajy564m" path="res://scripts/player.gd" id="2_fj7yv"]
+[ext_resource type="Script" uid="uid://kgrshajy564m" path="res://scripts/player_controller.gd" id="2_fj7yv"]
 [ext_resource type="Texture2D" uid="uid://pbq1fbyiag1f" path="res://tex/proto/dark/texture_13.png" id="2_tlwt5"]
+[ext_resource type="Script" uid="uid://bxh1i1ro56qyp" path="res://scripts/player_weapons.gd" id="4_aqk2v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fj7yv"]
 
@@ -38,6 +39,9 @@ uv1_scale = Vector3(3, 8, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_f3sb7"]
 size = Vector3(0.3, 0.3, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_aqk2v"]
+size = Vector3(0.2, 0.2, 1)
 
 [node name="world" type="Node3D" unique_id=546850593]
 
@@ -2223,6 +2227,9 @@ surface_material_override/0 = SubResource("StandardMaterial3D_tlwt5")
 [node name="player" type="CharacterBody3D" parent="." unique_id=1324173662]
 script = ExtResource("2_fj7yv")
 
+[node name="weapons" type="Node" parent="player" unique_id=689538165]
+script = ExtResource("4_aqk2v")
+
 [node name="col" type="CollisionShape3D" parent="player" unique_id=1932294852]
 transform = Transform3D(-1, 0, 8.742278e-08, 0, 1, 0, -8.742278e-08, 0, -1, 0, 1, 0)
 shape = SubResource("CylinderShape3D_f3sb7")
@@ -2234,6 +2241,32 @@ mesh = SubResource("CylinderMesh_fj7yv")
 [node name="pointer" type="MeshInstance3D" parent="player/mesh" unique_id=1014126210]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0.5)
 mesh = SubResource("BoxMesh_f3sb7")
+
+[node name="weapon_barrels" type="Node3D" parent="player/mesh" unique_id=1416960855]
+
+[node name="barrel_right-hand" type="Node3D" parent="player/mesh/weapon_barrels" unique_id=373611982]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 8.742278e-08)
+
+[node name="mesh" type="MeshInstance3D" parent="player/mesh/weapon_barrels/barrel_right-hand" unique_id=1118291347]
+mesh = SubResource("BoxMesh_aqk2v")
+
+[node name="barrel_left-hand" type="Node3D" parent="player/mesh/weapon_barrels" unique_id=1979699831]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, -8.742278e-08)
+
+[node name="mesh" type="MeshInstance3D" parent="player/mesh/weapon_barrels/barrel_left-hand" unique_id=892066738]
+mesh = SubResource("BoxMesh_aqk2v")
+
+[node name="barrel_right-back" type="Node3D" parent="player/mesh/weapon_barrels" unique_id=178277254]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.75, 1, -0.5)
+
+[node name="mesh" type="MeshInstance3D" parent="player/mesh/weapon_barrels/barrel_right-back" unique_id=1418701829]
+mesh = SubResource("BoxMesh_aqk2v")
+
+[node name="barrel_left-back" type="Node3D" parent="player/mesh/weapon_barrels" unique_id=1889184087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.75, 1, -0.5)
+
+[node name="mesh" type="MeshInstance3D" parent="player/mesh/weapon_barrels/barrel_left-back" unique_id=1117565767]
+mesh = SubResource("BoxMesh_aqk2v")
 
 [node name="cam_pivot" type="Node3D" parent="player" unique_id=1657541630]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
@@ -2252,3 +2285,8 @@ one_shot = true
 [node name="qb_delay" type="Timer" parent="player" unique_id=1632128203]
 wait_time = 0.5
 one_shot = true
+
+[node name="target_delay" type="Timer" parent="player" unique_id=725604077]
+one_shot = true
+
+[connection signal="timeout" from="player/target_delay" to="player" method="_on_target_delay_timeout"]

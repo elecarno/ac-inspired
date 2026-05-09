@@ -39,10 +39,15 @@ extends CharacterBody3D
 ## Vertical downward decelleration applied to the player as gravity
 @export var gravity:			float = -30.0
 
+@export_group("Cooldowns")
+@export var flight_delay_time: 		float = 0.5
+@export var quick_boost_delay_time: float = 0.5
+
 # VARIABLES --------------------------------------------------------------------
 var cam_input_direction: 	 Vector2 = Vector2.ZERO
 var last_movement_direction: Vector3 = Vector3.BACK
-var is_boost_mode: bool = false
+var is_boost_mode: 	bool = false
+var is_targeting:	bool = false
 
 # REFERENCES -------------------------------------------------------------------
 @onready var cam_pivot: 	Node3D = $cam_pivot
@@ -51,12 +56,14 @@ var is_boost_mode: bool = false
 @onready var mesh: 			MeshInstance3D = $mesh
 @onready var flight_delay: 	Timer = $flight_delay
 @onready var qb_delay: 		Timer = $qb_delay
-
+@onready var target_delay: 	Timer = $target_delay
 
 
 # CODE -------------------------------------------------------------------------
 func _ready() -> void:
 	cam_arm.spring_length = cam_walk_distance
+	flight_delay.wait_time = flight_delay_time
+	qb_delay.wait_time = quick_boost_delay_time
 	
 	# stop cam pivot from being locked to player position
 	cam_pivot.set_as_top_level(true)
@@ -74,6 +81,17 @@ func _input(event: InputEvent) -> void:
 			is_boost_mode = false
 		else:
 			is_boost_mode = true
+			
+	# detect weapon usage
+	var has_fired = (
+		event.is_action_pressed("weapon_right_hand") or
+		event.is_action_pressed("weapon_left_hand")  or
+		event.is_action_pressed("weapon_right_back") or
+		event.is_action_pressed("weapon_left_back")
+	)
+	if has_fired:
+		is_targeting = true
+		target_delay.start()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -156,8 +174,13 @@ func _physics_process(delta: float) -> void:
 	velocity.y = y_velocity + (gravity * delta)
 	
 	# quick boosting
-	if Input.is_action_just_pressed("move_boost") and qb_delay.is_stopped():
+	var can_boost: bool = (
+		Input.is_action_just_pressed("move_boost") and 
+		qb_delay.is_stopped()
+	)
+	if can_boost:
 		velocity += (move_direction * quick_boost_speed)
+		is_boost_mode = true
 		qb_delay.start()
 	
 	# jumping and flight
@@ -184,14 +207,52 @@ func _physics_process(delta: float) -> void:
 	#if is_boost_mode and velocity.length() < 0.1:
 		#is_boost_mode = false
 	
-	# rotate mesh to movement direction
-	if move_direction.length() > 0.2:
-		last_movement_direction = move_direction
-	
-	var target_angle: float = Vector3.BACK.signed_angle_to(
-		last_movement_direction, Vector3.UP
-	)
+	# mesh rotation
+	var target_angle: float = 0.0
+	if is_targeting:
+		# get screen center
+		var viewport_size = get_viewport().get_visible_rect().size
+		var screen_center = viewport_size / 2
+		
+		# raycast from center of camera
+		var ray_origin = cam.project_ray_origin(screen_center)
+		var ray_end = ray_origin + cam.project_ray_normal(screen_center) * 1000.0 # 1000m range
+		
+		# check for hit
+		var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+		
+		# exclude the player from hitting themselves
+		query.exclude = [get_rid()]
+		
+		var space_state = get_world_3d().direct_space_state
+		var result = space_state.intersect_ray(query)
+		var target_point: Vector3
+		if result: # snap to hit point
+			target_point = result.position
+		else: # hit nothing, snap to a point far in the distance
+			target_point = ray_end
+			
+		# rotate mesh and update last_movement_direction
+		var look_pos = Vector3(target_point.x, global_position.y, target_point.z)
+		var direction_to_target = (look_pos - global_position).normalized()
+		if global_position.distance_to(look_pos) > 0.1:
+			target_angle = Vector3.BACK.signed_angle_to(
+				direction_to_target, Vector3.UP
+			)
+			last_movement_direction = direction_to_target
+	else: # rotate mesh to movement direction
+		if move_direction.length() > 0.2:
+			last_movement_direction = move_direction
+		
+		target_angle = Vector3.BACK.signed_angle_to(
+			last_movement_direction, Vector3.UP
+		)
+		
 	mesh.global_rotation.y = lerp_angle(
 		mesh.rotation.y, target_angle, rotation_speed * delta
 	)
+	
+	
+func _on_target_delay_timeout() -> void:
+	is_targeting = false
 	
