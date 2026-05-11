@@ -9,8 +9,7 @@ radius = 0.1
 radius = 0.2
 height = 0.7
 
-[node name="bullet" type="RigidBody3D" unique_id=1668008969]
-mass = 0.5
+[node name="bullet" type="Area3D" unique_id=1274387216]
 script = ExtResource("1_v7oki")
 
 [node name="col" type="CollisionShape3D" parent="." unique_id=863798930]
